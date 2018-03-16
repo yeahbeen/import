@@ -32,6 +32,9 @@ if filename == None:
     print("没有Excel文件")
     sys.exit()
     
+result_dir = dir + filename.replace(".xlsx","") + "\\"
+os.makedirs(result_dir)
+    
 wb = load_workbook(filename)
 
 print(wb.sheetnames)
@@ -171,7 +174,7 @@ for sheetname in wb.sheetnames:
         
     final = SUITE % dict(suitename = sheetname.replace("&","_").replace("\"","“"),testcases = "".join(suites))
         
-    f = open(dir+sheetname+".xml","wb")
+    f = open(result_dir+sheetname+".xml","wb")
     f.write(HEADER.encode("utf8"))
     f.write(final.encode("utf8"))
     f.close
