@@ -41,7 +41,8 @@ def ismerged(cell):
 def getmerge(cell):
     for r in sheet_ranges.merged_cells.ranges:
         if r.issuperset(CellRange(cell.coordinate)): return r
-    return None
+    # return None
+    return CellRange(cell.coordinate)
 
 
 SUITE=r"""<testsuite name="%(suitename)s" >
@@ -99,11 +100,14 @@ for file in filename:
         casename0=None
         preconditions0=""
         m0 = None
+        pm0 = CellRange("A1:A1")
+        cm0 = CellRange("A1:A1")
         suitename0 = ""
         suite = None
         j = 2
         cases = []
         while sheet_ranges['B'+str(i)].value:
+            # print(sheet_ranges['B'+str(i)].value)
             #确定模块
             if sheet_ranges['C'+str(i)].value:
                 if suitename0 != "":
@@ -126,28 +130,62 @@ for file in filename:
                 # suite = SUITE% dict(suitename = suitename0)
                 
             #确定用例名
+            #单元格不空，则以此为用例名，并且记录该单元格的范围
             if sheet_ranges['D'+str(i)].value:
-                casename = sheet_ranges['D'+str(i)].value
-                casename = casename.replace("&","_").replace("\"","“")
-                casename0=casename
+                casename = casename0 = sheet_ranges['D'+str(i)].value.replace("&","_").replace("\"","“")
+                cm0 = getmerge(sheet_ranges['D'+str(i)])
                 j = 2
-            elif casename0:
+            #单元格是空的，但跟前面的单元格是同一范围，则用前面的用例名，加上序号
+            elif getmerge(sheet_ranges['D'+str(i)]) == cm0:
                 casename = "%s(%i)"%(casename0,j)
                 j+=1
+            #单元格是空的，跟前面的单元格不是同一范围，则取前置条件做用例名
             elif sheet_ranges['E'+str(i)].value:
-                casename = sheet_ranges['E'+str(i)].value
+                casename = sheet_ranges['E'+str(i)].value.replace("&","_").replace("\"","“")
+            #前置条件也是空的，则取步骤为用例名
+            elif sheet_ranges['F'+str(i)].value:
+                casename = sheet_ranges['F'+str(i)].value.replace("&","_").replace("\"","“")
+            #步骤也是空的，则取期望结果为用例名
+            elif sheet_ranges['G'+str(i)].value:
+                casename = sheet_ranges['G'+str(i)].value.replace("&","_").replace("\"","“")
             else:
-                casename = sheet_ranges['F'+str(i)].value
+                casename = "空行"
+                
+            # if sheet_ranges['D'+str(i)].value:
+                # casename = sheet_ranges['D'+str(i)].value
+                # casename = casename.replace("&","_").replace("\"","“")
+                # casename0=casename
+                # j = 2
+            # elif casename0:
+                # casename = "%s(%i)"%(casename0,j)
+                # j+=1
+            # elif sheet_ranges['E'+str(i)].value:
+                # casename = sheet_ranges['E'+str(i)].value
+            # else:
+                # casename = sheet_ranges['F'+str(i)].value
+                
             #确定前置条件
+            #单元格不空，则以此为前置，并且记录该单元格的范围
             if sheet_ranges['E'+str(i)].value:
-                preconditions = sheet_ranges['E'+str(i)].value
-                if ismerged(sheet_ranges['E'+str(i)]):
-                    preconditions0 = sheet_ranges['E'+str(i)].value
-            elif ismerged(sheet_ranges['E'+str(i)]):
-                preconditions=preconditions0
+                preconditions = preconditions0 = sheet_ranges['E'+str(i)].value
+                pm0 = getmerge(sheet_ranges['E'+str(i)])
+            #单元格是空的，但跟前面的单元格是同一范围，则用前面的前置
+            elif getmerge(sheet_ranges['E'+str(i)]) == pm0:
+                preconditions = preconditions0
+            #单元格是空的，并且跟前面的单元格不是同一范围，则前置为空，并且记录该单元格范围
             else:
-                preconditions = sheet_ranges['E'+str(i)].value
-                preconditions0 = ""
+                preconditions = preconditions0 = ""
+                pm0 = getmerge(sheet_ranges['E'+str(i)])
+            
+            # if sheet_ranges['E'+str(i)].value:
+                # preconditions = sheet_ranges['E'+str(i)].value
+                # if ismerged(sheet_ranges['E'+str(i)]):
+                    # preconditions0 = sheet_ranges['E'+str(i)].value
+            # elif ismerged(sheet_ranges['E'+str(i)]):
+                # preconditions=preconditions0
+            # else:
+                # preconditions = preconditions0 = ""
+                
             #步骤和期望结果
             steps = sheet_ranges['F'+str(i)].value
             expect = sheet_ranges['G'+str(i)].value
